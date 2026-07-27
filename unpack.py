@@ -27,7 +27,7 @@ for line in lines:
     # 1. Detect heading (## or ###) outside a code block
     if (line.startswith("## ") or line.startswith("### ")) and not in_code_block:
         header_text = line.lstrip("#").strip()
-        clean_path = header_text.replace("`", "").replace("'", "").replace('"', "").strip()
+        clean_path = header_text.replace("`", "").replace("\"", "").replace("'", "").strip()
         
         # Extract path from heading
         parts = clean_path.split()
@@ -59,4 +59,4 @@ for line in lines:
     elif in_code_block:
         code_buffer.append(line)
 
-print(f"\n🎉 Done! Successfully generated {extracted_count} files for \'{project_slug}\'."))
+print(f"\n🎉 Done! Successfully generated {extracted_count} files for \'{project_slug}\'.")

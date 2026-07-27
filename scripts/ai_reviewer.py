@@ -13,38 +13,33 @@ from google import genai
 from google.genai import errors, types
 
 DEFAULT_MODEL = "gemini-3.1-flash-lite"
-SYSTEM_PROMPT = """Jsi Senior Python Architekt. Tvým úkolem je revidovat kód v 
-Pull Requestu.
-ZÁKLADNÍ PRAVIDLA:
-Ignoruj formátování, importy, mezery a PEP8. (To už vyřešil Ruff před tebou).
-Soustřeď se na 'Big Picture': logické chyby, chybějící ošetření chyb (try-except), 
-bezpečnostní rizika (API klíče v kódu), nebo zbytečně složitou implementaci.
-Buď pragmatický freelancer: Nekritizuj věci, které jsou věcí vkusu. 
-Kritizuj to, co může způsobit pád v produkci nebo budoucí technický dluh.
-Priority: Pokud je chyba kritická, označ ji 🔴. Pokud je to jen doporučení, označ ho 💡.
-Stručnost: Pokud je kód v pořádku, napiš jen: '✅ Kód je čistý a připraven k mergi.'
-Tón: Konstruktivní, stručný, kolegiální."""
+SYSTEM_PROMPT = Path("prompts/review.md").read_text(encoding="utf-8")
 MAX_GITHUB_COMMENT_LENGTH = 60_000
 
 
 def get_git_diff(base_branch: str = "main") -> str:
     """Return the merge-base diff between the base branch and HEAD."""
     base_revision = _resolve_base_revision(base_branch)
-    result = subprocess.run(
-        [
-            "git",
-            "diff",
-            "--no-ext-diff",
-            "--no-color",
-            f"{base_revision}...HEAD",
-            "--",
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "diff",
+                "--no-ext-diff",
+                "--no-color",
+                f"{base_revision}...HEAD",
+                "--",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError("Git not found. Please ensure Git is installed and in your PATH.") from exc
+    except subprocess.CalledProcessError as exc:
+        raise RuntimeError(f"Git command failed: {exc.stderr.strip()}") from exc
     return result.stdout
 
 
@@ -98,7 +93,9 @@ def post_pull_request_comment(
     comment: str,
 ) -> None:
     """Post a pull request issue comment using the GitHub REST API."""
-    github_token = os.environ["GITHUB_TOKEN"]
+    github_token = os.environ.get("GITHUB_TOKEN")
+    if not github_token:
+        raise RuntimeError("GITHUB_TOKEN environment variable is not set. Please set it for local development.")
     api_url = os.environ.get("GITHUB_API_URL", "https://api.github.com")
     url = f"{api_url}/repos/{repository}/issues/{pull_request_number}/comments"
     body = comment[:MAX_GITHUB_COMMENT_LENGTH]
@@ -132,8 +129,8 @@ def post_pull_request_comment(
 
 def main() -> None:
     """Run the AI review workflow for the current pull request."""
+    gemini_api_key = _get_gemini_api_key()
     _required_environment("GITHUB_TOKEN")
-    gemini_api_key = _required_environment("GEMINI_API_KEY")
     base_branch = os.environ.get("GITHUB_BASE_REF", "main")
 
     diff = get_git_diff(base_branch)
@@ -167,6 +164,14 @@ def _required_environment(name: str) -> str:
     if not value:
         raise RuntimeError(f"Required environment variable {name} is not set")
     return value
+
+def _get_gemini_api_key() -> str:
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY environment variable is not set.")
+    if api_key.startswith(("sk-", "AIza")) and len(api_key) > 20:
+        print("🔴 Warning: GEMINI_API_KEY appears to be a real token. Please ensure it is not hardcoded or exposed publicly.", file=sys.stderr)
+    return api_key
 
 
 if __name__ == "__main__":
