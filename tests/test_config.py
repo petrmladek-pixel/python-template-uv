@@ -13,5 +13,6 @@ def test_settings_load(override_settings: Settings) -> None:
 def test_get_settings_without_override() -> None:
     # Test to ensure default settings are loaded when no override is present
     settings = get_settings()
-    assert settings.environment == "testing" # This is due to os.environ["ENVIRONMENT"] = "testing" in conftest.py
+    # This is due to os.environ["ENVIRONMENT"] = "testing" in conftest.py
+    assert settings.environment == "testing"
     assert settings.debug is False # Default debug is False

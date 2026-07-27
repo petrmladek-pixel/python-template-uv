@@ -37,7 +37,9 @@ def get_git_diff(base_branch: str = "main") -> str:
             errors="replace",
         )
     except FileNotFoundError as exc:
-        raise RuntimeError("Git not found. Please ensure Git is installed and in your PATH.") from exc
+        raise RuntimeError(
+            "Git not found. Please ensure Git is installed and in your PATH."
+        ) from exc
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(f"Git command failed: {exc.stderr.strip()}") from exc
     return result.stdout
@@ -95,7 +97,10 @@ def post_pull_request_comment(
     """Post a pull request issue comment using the GitHub REST API."""
     github_token = os.environ.get("GITHUB_TOKEN")
     if not github_token:
-        raise RuntimeError("GITHUB_TOKEN environment variable is not set. Please set it for local development.")
+        raise RuntimeError(
+            "GITHUB_TOKEN environment variable is not set."
+            " Please set it for local development."
+        )
     api_url = os.environ.get("GITHUB_API_URL", "https://api.github.com")
     url = f"{api_url}/repos/{repository}/issues/{pull_request_number}/comments"
     body = comment[:MAX_GITHUB_COMMENT_LENGTH]
@@ -170,7 +175,11 @@ def _get_gemini_api_key() -> str:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY environment variable is not set.")
     if api_key.startswith(("sk-", "AIza")) and len(api_key) > 20:
-        print("🔴 Warning: GEMINI_API_KEY appears to be a real token. Please ensure it is not hardcoded or exposed publicly.", file=sys.stderr)
+        print(
+            "🔴 Warning: GEMINI_API_KEY appears to be a real token. "
+            "Please ensure it is not hardcoded or exposed publicly.",
+            file=sys.stderr,
+        )
     return api_key
 
 
