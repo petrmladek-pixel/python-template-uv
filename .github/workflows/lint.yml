@@ -34,3 +34,6 @@ jobs:
 
       - name: Run Ruff
         run: uv run ruff check .
+
+      - name: Check English spelling in code and comments
+        run: uv run codespell

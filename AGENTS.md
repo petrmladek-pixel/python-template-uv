@@ -54,3 +54,5 @@ Types:
 1. Always ensure that sensitive keys, such as variables stored in .env, are
    never included in commits.
 2. Before committing, verify that the code contains no syntax errors.
+3. All code comments, docstrings, type hint descriptions, and commit messages
+   MUST be written strictly in English.
